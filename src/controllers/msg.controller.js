@@ -1,7 +1,13 @@
 import admin from 'firebase-admin'
 import { serviceAccount } from '../../serviceAccountKey.js';
 import { getFirestore, collection, addDoc, getDocs } from "firebase/firestore";
+
 import { db } from '../firebase.js';
+
+const dataCollection = {
+  "Investigacion1": "Investigacion 1 9:00",
+  "Investigacion2": "Investigacion 2 12:00",
+};
 
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
@@ -43,7 +49,6 @@ export const msg = async (req, res) => {
   }
 }
 
-
 export const alumn = async (req, res) => {
     try {
       const { nombre, numeroControl, token, coleccion } = req.body; // Los datos que deseas guardar en Firestore
@@ -65,6 +70,7 @@ export const alumn = async (req, res) => {
       res.status(500).json({ error: "Error al guardar datos en Firestore en la colección " + coleccion });
     }
   };
+
   export const obtenerTodosLosDatos = async (req, res) => {
     try {
       const { coleccion } = req.body; // Obtén el nombre de la colección de los datos de la solicitud
@@ -90,4 +96,35 @@ export const alumn = async (req, res) => {
       res.status(500).json({ error: "Error al obtener los datos de la colección" });
     }
   };
+
+  export const colleciones = async (req, res) => {
+    try {
+      const userToken = req.body.token; // Obtener el token de la solicitud
+  
+      if (!userToken) {
+        return res.status(400).json({ error: 'Debes proporcionar un token.' });
+      }
+  
+      const allData = {};
+  
+      for (const collectionName in dataCollection) {
+        const querySnapshot = await getDocs(collection(db, dataCollection[collectionName]));
+        const datos = [];
+  
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          if (data.token === userToken) {
+            datos.push(data);
+          }
+        });
+  
+        allData[collectionName] = datos;
+      }
+      res.json({message: "registrado"});
+    } catch (error) {
+      console.error('Error al listar colecciones:', error);
+      res.status(500).json({ error: 'Error al listar colecciones' });
+    }
+  };
+  
   
