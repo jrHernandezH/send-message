@@ -120,7 +120,7 @@ export const alumn = async (req, res) => {
   
         allData[collectionName] = datos;
       }
-      res.json({message: "registrado"});
+     res.json(allData);
     } catch (error) {
       console.error('Error al listar colecciones:', error);
       res.status(500).json({ error: 'Error al listar colecciones' });
