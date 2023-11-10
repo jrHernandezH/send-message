@@ -22,32 +22,40 @@ export const msg = async (req, res) => {
     }
 
     const querySnapshot = await getDocs(collection(db, coleccion));
-    const notificationPromises = [];
 
-    querySnapshot.forEach((doc) => {
-      const data = doc.data();
+    const notificationPromises = querySnapshot.docs.map(async (documento) => {
       const message = {
         notification: {
           title: `Clase de ${coleccion}`,
-          body: "Tu maestr@ ah llegado al salon de clases presentate en este momento",
+          body: 'Tu maestr@ ha llegado al salón',
         },
-        token: data.token,
+        token: documento.data().token,
       };
 
-      const notificationPromise = admin.messaging().send(message);
-      notificationPromises.push(notificationPromise);
+      try {
+        const envioA = await admin.messaging().send(message);
+        console.log('Notificación enviada con éxito:', envioA);
+        return { success: true, token: documento.data().token };
+      } catch (error) {
+        if (error.code === 'messaging/registration-token-not-registered') {
+          console.error('Token no registrado:', documento.data().token);
+        } else {
+          console.error('Error al enviar la notificación:', error);
+        }
+        return { success: false, token: documento.data().token, error: error.message };
+      }
     });
 
-    // Espera a que se resuelvan todas las promesas de notificación
-    await Promise.all(notificationPromises);
+    // Espera a que todas las promesas se resuelvan, independientemente de si fueron exitosas o no
+    const results = await Promise.allSettled(notificationPromises);
 
-    // Luego responde al cliente
-    res.json({ success: 'Notificaciones enviadas con éxito.' });
+    // Luego responde al cliente con los resultados
+    res.json({ success: 'Notificaciones enviadas con éxito.', results });
   } catch (error) {
     console.error("Error al obtener los datos de la colección: ", error);
     res.status(500).json({ error: "Error al obtener los datos de la colección" });
   }
-}
+};
 
 export const alumn = async (req, res) => {
     try {
